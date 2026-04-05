@@ -4,9 +4,7 @@ using Rex.Shared.Timing;
 
 namespace Content.Shared;
 
-/// <summary>
-/// Defines game specific startup values that the engine consumes.
-/// </summary>
+/// <summary>Game constants and factories the engine reads during bootstrap.</summary>
 public static class ContentGameInfo
 {
     public const string GameName = "RexGame";
@@ -27,18 +25,14 @@ public static class ContentGameInfo
         NetMode.ListenServer
     ];
 
-    /// <summary>
-    /// Creates the default shared session settings for the game.
-    /// </summary>
+    /// <summary>Default port, tick rate and player cap from <see cref="ProtocolConstants"/>.</summary>
     public static ContentSessionSettings CreateDefaultSessionSettings() =>
         new(
             ProtocolConstants.DefaultPort,
             ProtocolConstants.DefaultTickRate,
             ProtocolConstants.DefaultMaxPlayers);
 
-    /// <summary>
-    /// Builds the game definition for client startup.
-    /// </summary>
+    /// <summary>Builds <see cref="GameClientStartDefinition"/> with RexGame window defaults and local listen server wiring.</summary>
     public static GameClientStartDefinition CreateClientStartDefinition()
     {
         var defaults = CreateDefaultSessionSettings();
@@ -51,9 +45,7 @@ public static class ContentGameInfo
             new ListenServerDefinition("REX_CONTENT_SERVER_DLL", "Content.Server.dll", ListenServerReadyLine, DefaultHost));
     }
 
-    /// <summary>
-    /// Builds the game definition for server startup.
-    /// </summary>
+    /// <summary>Builds <see cref="GameServerStartDefinition"/> with RexGame dedicated name and ready line.</summary>
     public static GameServerStartDefinition CreateServerStartDefinition()
     {
         var defaults = CreateDefaultSessionSettings();
@@ -67,9 +59,10 @@ public static class ContentGameInfo
     }
 }
 
-/// <summary>
-/// Groups default session settings for content startup.
-/// </summary>
+/// <summary>Port, tick rate and player cap baseline before CLI overrides.</summary>
+/// <param name="Port">Baseline UDP port.</param>
+/// <param name="TickRate">Fixed simulation rate in Hz.</param>
+/// <param name="MaxPlayers">Baseline session capacity.</param>
 public readonly record struct ContentSessionSettings(int Port, int TickRate, int MaxPlayers)
 {
     public TickClock CreateClock() => new(TickRate);
