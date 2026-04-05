@@ -1,0 +1,4 @@
+[submodule "RexEngine"]
+	path = RexEngine
+	url = https://github.com/Rinzii/RexEngine.git
+	branch = main
