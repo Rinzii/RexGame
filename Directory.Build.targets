@@ -1,0 +1,37 @@
+<Project>
+  <!--
+    Match the engine's build-time architecture enforcement:
+    - Game projects must not depend on Rex.Sandbox.* sample code.
+    - Shared stays shared-only.
+    - Client and Server must not reference each other directly.
+  -->
+  <Target Name="ContentEnforceProjectReferenceIsolation" BeforeTargets="PrepareForBuild"
+          Condition="$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('Content.'))">
+    <ItemGroup>
+      <_ContentSandboxProjectReference Include="@(ProjectReference)"
+                                       Condition="$([System.String]::Copy('%(ProjectReference.Identity)').Contains('Rex.Sandbox.'))"/>
+      <_ContentSharedIllegalReference Include="@(ProjectReference)"
+                                      Condition="'$(MSBuildProjectName)' == 'Content.Shared' and ($([System.String]::Copy('%(ProjectReference.Identity)').Contains('Content.Client')) or $([System.String]::Copy('%(ProjectReference.Identity)').Contains('Content.Server')))"/>
+      <_ContentClientIllegalReference Include="@(ProjectReference)"
+                                      Condition="'$(MSBuildProjectName)' == 'Content.Client' and $([System.String]::Copy('%(ProjectReference.Identity)').Contains('Content.Server'))"/>
+      <_ContentServerIllegalReference Include="@(ProjectReference)"
+                                      Condition="'$(MSBuildProjectName)' == 'Content.Server' and $([System.String]::Copy('%(ProjectReference.Identity)').Contains('Content.Client'))"/>
+    </ItemGroup>
+
+    <Error
+      Condition="'@(_ContentSandboxProjectReference)' != ''"
+      Text="Project '$(MSBuildProjectName)' must not reference Rex.Sandbox.* (sample-only, not a shipping dependency). Remove: @(_ContentSandboxProjectReference->'%(Identity)', ', ')"/>
+
+    <Error
+      Condition="'@(_ContentSharedIllegalReference)' != ''"
+      Text="Project 'Content.Shared' must remain shared-only and cannot reference client/server projects. Remove: @(_ContentSharedIllegalReference->'%(Identity)', ', ')"/>
+
+    <Error
+      Condition="'@(_ContentClientIllegalReference)' != ''"
+      Text="Project 'Content.Client' must not reference Content.Server directly. Shared code belongs in Content.Shared. Remove: @(_ContentClientIllegalReference->'%(Identity)', ', ')"/>
+
+    <Error
+      Condition="'@(_ContentServerIllegalReference)' != ''"
+      Text="Project 'Content.Server' must not reference Content.Client directly. Shared code belongs in Content.Shared. Remove: @(_ContentServerIllegalReference->'%(Identity)', ', ')"/>
+  </Target>
+</Project>
