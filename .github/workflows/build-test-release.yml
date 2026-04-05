@@ -15,6 +15,9 @@ permissions:
 env:
     DOTNET_NO_LOGO: true
     DOTNET_CLI_TELEMETRY_OPTOUT: true
+    REXGAME_MACOS_APP_NAME: RexGame
+    REXGAME_MACOS_BUNDLE_ID: com.rexengine.rexgame
+    REXGAME_UPLOAD_MACOS_ARTIFACTS: false
 
 jobs:
     build:
@@ -55,6 +58,38 @@ jobs:
                   -warnaserror
                   /p:ContinuousIntegrationBuild=true
 
+            - name: Build macOS client app bundles
+              if: matrix.os == 'macos-latest'
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p release
+                  for rid in osx-x64 osx-arm64; do
+                    dotnet publish Content.Client/Content.Client.csproj \
+                      --configuration Release \
+                      --runtime "$rid" \
+                      --no-self-contained \
+                      /p:UseAppHost=true \
+                      /p:ContinuousIntegrationBuild=true
+
+                    bundle_root="release/${rid}"
+                    rm -rf "$bundle_root"
+                    mkdir -p "$bundle_root"
+
+                    python3 Tools/macos_make_appbundle.py \
+                      --directory "build/publish/Content.Client/release_${rid}" \
+                      --output-dir "$bundle_root" \
+                      --name "$REXGAME_MACOS_APP_NAME" \
+                      --apphost Content.Client \
+                      --identifier "$REXGAME_MACOS_BUNDLE_ID"
+
+                    if [ "$REXGAME_UPLOAD_MACOS_ARTIFACTS" = "true" ]; then
+                      ditto -c -k --sequesterRsrc --keepParent \
+                        "$bundle_root/${REXGAME_MACOS_APP_NAME}.app" \
+                        "release/${REXGAME_MACOS_APP_NAME}-${rid}.zip"
+                    fi
+                  done
+
             - name: Test
               shell: bash
               run: |
@@ -71,10 +106,10 @@ jobs:
                     echo "No test projects found in RexGame yet."
                   fi
 
-            - name: Upload test results
-              if: always()
+            - name: Upload macOS app bundles
+              if: matrix.os == 'macos-latest' && env.REXGAME_UPLOAD_MACOS_ARTIFACTS == 'true'
               uses: actions/upload-artifact@v4
               with:
-                  name: test-results-release-${{ matrix.os }}
-                  path: TestResults
-                  if-no-files-found: ignore
+                  name: macos-client-bundles
+                  path: release/*.zip
+                  if-no-files-found: error
