@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="Content Server + Client" type="CompoundRunConfigurationType">
+        <toRun name="Content Server" type="LaunchSettings"/>
+        <toRun name="Content Client" type="LaunchSettings"/>
+        <method v="2">
+            <option name="Build"/>
+        </method>
+    </configuration>
+</component>
